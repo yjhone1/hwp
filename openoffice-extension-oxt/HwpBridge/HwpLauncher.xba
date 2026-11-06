@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="HwpLauncher" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Sub OpenHwpEditor()
+  On Error GoTo ErrorHandler
+  Dim oPip As Object
+  Dim sExtUrl As String
+  Dim oPathSubst As Object
+  Dim sUserUrl As String
+  Dim sInstUrl As String
+  Dim sProgUrl As String
+  Dim sWorkUrl As String
+  Dim sHomeUrl As String
+  Dim sCandidates(14) As String
+  Dim i As Integer
+  Dim sTargetSysPath As String
+  Dim oShell As Object
+
+  sTargetSysPath = &quot;&quot;
+
+  REM 1. Retrieve the installed extension unpacked package directory
+  On Error Resume Next
+  oPip = GetDefaultContext().getValueByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+  If Not IsNull(oPip) And Not IsEmpty(oPip) Then
+    sExtUrl = oPip.getPackageLocation(&quot;org.apache.openoffice.ko.hwp.extension&quot;)
+  End If
+  On Error GoTo ErrorHandler
+
+  oPathSubst = CreateUnoService(&quot;com.sun.star.util.PathSubstitution&quot;)
+  sUserUrl = oPathSubst.getSubstituteVariableValue(&quot;$(user)&quot;)
+  sInstUrl = oPathSubst.getSubstituteVariableValue(&quot;$(inst)&quot;)
+  sProgUrl = oPathSubst.getSubstituteVariableValue(&quot;$(prog)&quot;)
+  sWorkUrl = oPathSubst.getSubstituteVariableValue(&quot;$(work)&quot;)
+  sHomeUrl = oPathSubst.getSubstituteVariableValue(&quot;$(home)&quot;)
+
+  REM Check inside the unpacked .oxt package first
+  If Len(sExtUrl) &gt; 0 Then
+    sCandidates(0) = ConvertFromURL(sExtUrl &amp; &quot;/Apache_OpenOffice_HWP_Standalone.html&quot;)
+    sCandidates(1) = ConvertFromURL(sExtUrl &amp; &quot;/Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html&quot;)
+    sCandidates(2) = ConvertFromURL(sExtUrl &amp; &quot;/hwp-editor/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  End If
+
+  REM Check user profile hwp-editor directory
+  sCandidates(3) = ConvertFromURL(sUserUrl &amp; &quot;/hwp-editor/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  sCandidates(4) = ConvertFromURL(sUserUrl &amp; &quot;/hwp-editor/Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html&quot;)
+
+  REM Check OpenOffice installation directory and program folder (where user may have pasted)
+  sCandidates(5) = ConvertFromURL(sInstUrl &amp; &quot;/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  sCandidates(6) = ConvertFromURL(sInstUrl &amp; &quot;/Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html&quot;)
+  sCandidates(7) = ConvertFromURL(sProgUrl &amp; &quot;/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  sCandidates(8) = ConvertFromURL(sInstUrl &amp; &quot;/program/Apache_OpenOffice_HWP_Standalone.html&quot;)
+
+  REM Check working folder and common locations
+  sCandidates(9) = ConvertFromURL(sWorkUrl &amp; &quot;/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  sCandidates(10) = ConvertFromURL(sHomeUrl &amp; &quot;/Desktop/Apache_OpenOffice_HWP_Standalone.html&quot;)
+  sCandidates(11) = &quot;C:\Program Files (x86)\OpenOffice 4\Apache_OpenOffice_HWP_Standalone.html&quot;
+  sCandidates(12) = &quot;C:\Program Files\OpenOffice 4\Apache_OpenOffice_HWP_Standalone.html&quot;
+  sCandidates(13) = &quot;C:\openoffice4\Apache_OpenOffice_HWP_Standalone.html&quot;
+
+  For i = 0 To 13
+    If Len(sCandidates(i)) &gt; 0 Then
+      If FileExists(sCandidates(i)) Then
+        sTargetSysPath = sCandidates(i)
+        Exit For
+      End If
+    End If
+  Next i
+
+  If Len(sTargetSysPath) &gt; 0 Then
+    oShell = CreateUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+    oShell.execute(sTargetSysPath, &quot;&quot;, 0)
+  Else
+    MsgBox &quot;오픈오피스 한글(.hwp/.hwpx) 편집기 파일을 찾을 수 없습니다.&quot; &amp; Chr(13) &amp; Chr(13) &amp; _
+           &quot;다음 위치 중 하나에 'Apache_OpenOffice_HWP_Standalone.html' 파일이 있어야 합니다:&quot; &amp; Chr(13) &amp; _
+           &quot;1. 오픈오피스 설치 폴더: &quot; &amp; ConvertFromURL(sInstUrl) &amp; Chr(13) &amp; _
+           &quot;2. 사용자 프로필 폴더: &quot; &amp; ConvertFromURL(sUserUrl) &amp; &quot;\hwp-editor\&quot;, 64, &quot;Apache OpenOffice 한글(.hwp/.hwpx) 확장 모듈&quot;
+  End If
+  Exit Sub
+
+ErrorHandler:
+  MsgBox &quot;한글(.hwp/.hwpx) 편집기 실행 중 오류가 발생했습니다: &quot; &amp; Error$, 48, &quot;Apache OpenOffice 한글 확장팩&quot;
+End Sub
+</script:module>

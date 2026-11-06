@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<description xmlns="http://openoffice.org/extensions/description/2006"
+             xmlns:d="http://openoffice.org/extensions/description/2006"
+             xmlns:xlink="http://www.w3.org/1999/xlink">
+  <identifier value="org.apache.openoffice.ko.hwp.extension" />
+  <version value="2.2.0" />
+  <dependencies>
+    <OpenOffice.org-minimal-version value="4.1.0" d:name="Apache OpenOffice 4.1.0 or later" />
+  </dependencies>
+  <display-name>
+    <name lang="ko">Apache OpenOffice 한글(.hwp/.hwpx) 독립 확장 플러그인</name>
+    <name lang="en">Korean HWP/HWPX Document Filter &amp; Editor Extension</name>
+  </display-name>
+</description>

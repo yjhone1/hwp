@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest:manifest xmlns:manifest="http://openoffice.org/2001/manifest">
+  <manifest:file-entry manifest:media-type="application/vnd.sun.star.configuration-data"
+                       manifest:full-path="Addons.xcu"/>
+  <manifest:file-entry manifest:media-type="application/vnd.sun.star.basic-library"
+                       manifest:full-path="HwpBridge/"/>
+  <manifest:file-entry manifest:media-type="application/vnd.sun.star.package-bundle-description"
+                       manifest:full-path="description.xml"/>
+  <manifest:file-entry manifest:media-type="text/html"
+                       manifest:full-path="Apache_OpenOffice_HWP_Standalone.html"/>
+  <manifest:file-entry manifest:media-type="text/html"
+                       manifest:full-path="Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html"/>
+</manifest:manifest>

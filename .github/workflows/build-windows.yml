@@ -1,0 +1,96 @@
+name: Build & Package Apache OpenOffice HWP Extension
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      aoo_branch:
+        description: 'Apache OpenOffice Source Branch or Tag to fetch'
+        required: false
+        default: 'AOO41X'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    name: Build HWP Extension & Package Windows Distribution
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout HWP Extension Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build HWP Extension Binary (.oxt)
+        run: npm run build:oxt
+
+      - name: Build Web Application & Standalone Suite
+        run: npm run build
+
+      - name: Fetch Apache OpenOffice Official Source (AOO41X)
+        shell: bash
+        run: |
+          AOO_REF="${{ github.event.inputs.aoo_branch || 'AOO41X' }}"
+          echo "================================================================="
+          echo "아파치 공식 저장소(apache/openoffice, $AOO_REF)에서 최신 원본 소스를 복제합니다..."
+          echo "================================================================="
+          git clone --depth 1 -b "$AOO_REF" https://github.com/apache/openoffice.git aoo-official-source || \
+          git clone --depth 1 https://github.com/apache/openoffice.git aoo-official-source
+          
+          echo "한글 확장팩을 아파치 오픈오피스 소스 트리(main/extensions/hwp)에 연결합니다..."
+          mkdir -p aoo-official-source/main/extensions/hwp
+          cp -rf openoffice-extension-oxt/* aoo-official-source/main/extensions/hwp/ 2>/dev/null || true
+          cp -f Apache_OpenOffice_HWP_Extension_*.oxt aoo-official-source/main/extensions/hwp/ 2>/dev/null || true
+          echo "오픈오피스 공식 소스 트리와 한글 확장팩 결합 완료!"
+
+      - name: Prepare Windows Distribution Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist-windows
+          # 1. Web Suite
+          Copy-Item -Recurse -Force -Path dist -Destination dist-windows/web-suite
+          # 2. Standalone HTML
+          if (Test-Path "Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html") {
+            Copy-Item -Force "Apache_OpenOffice_4.1.17_Full_Suite_with_HWP.html" "dist-windows/"
+          }
+          if (Test-Path "Apache_OpenOffice_HWP_Standalone.html") {
+            Copy-Item -Force "Apache_OpenOffice_HWP_Standalone.html" "dist-windows/"
+          }
+          # 3. OXT Extension, Scripts, Guides
+          Get-ChildItem -Filter "*.oxt" | ForEach-Object { Copy-Item -Force $_.FullName "dist-windows/" }
+          Get-ChildItem -Filter "*.bat" | ForEach-Object { Copy-Item -Force $_.FullName "dist-windows/" }
+          Get-ChildItem -Filter "*.txt" | ForEach-Object { Copy-Item -Force $_.FullName "dist-windows/" }
+          Get-ChildItem -Filter "*.md" | ForEach-Object { Copy-Item -Force $_.FullName "dist-windows/" }
+          # 4. Pure OXT Source Folder
+          if (Test-Path "openoffice-extension-oxt") {
+            Copy-Item -Recurse -Force -Path openoffice-extension-oxt -Destination dist-windows/openoffice-extension-oxt
+          }
+
+          # Compress Full Distribution
+          Compress-Archive -Path "dist-windows/*" -DestinationPath "OpenOffice-4.1.17-HWP-Windows-Distribution.zip" -Force
+
+      - name: Upload Windows Distribution Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenOffice-4.1.17-HWP-Windows-Distribution
+          path: OpenOffice-4.1.17-HWP-Windows-Distribution.zip
+          retention-days: 30
+
+      - name: Upload Pure HWP Extension (.oxt)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Apache-OpenOffice-HWP-Extension-v2.2.0
+          path: Apache_OpenOffice_HWP_Extension_v2.2.0.oxt
+          retention-days: 30
